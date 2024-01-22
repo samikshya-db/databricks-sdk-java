@@ -60,6 +60,10 @@ public class CommonsHttpClient implements HttpClient {
   public Response execute(Request in) throws IOException {
     HttpUriRequest request = transformRequest(in);
     in.getHeaders().forEach(request::setHeader);
+    boolean handleRedirects = in.getRedirectionBehavior().orElse(true);
+    if (!handleRedirects) {
+      request.getParams().setParameter("http.protocol.handle-redirects", false);
+    }
     CloseableHttpResponse response = hc.execute(request);
     return computeResponse(in, response);
   }

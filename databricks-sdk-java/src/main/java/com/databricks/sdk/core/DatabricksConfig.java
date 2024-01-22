@@ -525,9 +525,10 @@ public class DatabricksConfig {
     if (getHost() == null) {
       return null;
     }
-    if (isAzure()) {
-      Response resp =
-          getHttpClient().execute(new Request("GET", getHost() + "/oidc/oauth2/v2.0/authorize"));
+    if (isAzure() && getAzureClientId() != null) {
+      Request request = new Request("GET", getHost() + "/oidc/oauth2/v2.0/authorize");
+      request.setRedirectionBehavior(false);
+      Response resp = getHttpClient().execute(request);
       String realAuthUrl = resp.getFirstHeader("location");
       if (realAuthUrl == null) {
         return null;
@@ -539,7 +540,6 @@ public class DatabricksConfig {
       String prefix = getHost() + "/oidc/accounts/" + getAccountId();
       return new OpenIDConnectEndpoints(prefix + "/v1/token", prefix + "/v1/authorize");
     }
-
     String oidcEndpoint = getHost() + "/oidc/.well-known/oauth-authorization-server";
     Response resp = getHttpClient().execute(new Request("GET", oidcEndpoint));
     if (resp.getStatusCode() != 200) {

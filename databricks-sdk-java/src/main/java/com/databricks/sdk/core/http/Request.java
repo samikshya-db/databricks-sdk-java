@@ -16,6 +16,7 @@ public class Request {
   public static final String PATCH = "PATCH";
   private final String method;
   private String url;
+  private Optional<Boolean> redirectionBehavior = Optional.empty();
   private final Map<String, String> headers = new HashMap<>();
   private final Map<String, List<String>> query = new TreeMap<>();
   /**
@@ -72,6 +73,14 @@ public class Request {
   public Request withHeader(String key, String value) {
     headers.put(key, value);
     return this;
+  }
+
+  public Optional<Boolean> getRedirectionBehavior() {
+    return this.redirectionBehavior;
+  }
+
+  public void setRedirectionBehavior(boolean redirectionBehavior) {
+    this.redirectionBehavior = Optional.of(redirectionBehavior);
   }
 
   public Request withQueryParam(String key, String value) {
@@ -182,7 +191,8 @@ public class Request {
     return method.equals(request.method)
         && url.equals(request.url)
         && Objects.equals(query, request.query)
-        && Objects.equals(bodyStream, request.bodyStream);
+        && Objects.equals(bodyStream, request.bodyStream)
+        && Objects.equals(redirectionBehavior, request.redirectionBehavior);
   }
 
   @Override
