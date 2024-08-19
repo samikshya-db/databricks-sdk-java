@@ -38,6 +38,7 @@ public class OAuthM2MServicePrincipalCredentialsProvider implements CredentialsP
               .withJwtKeyFile(config.getJwtKeyFile())
               .withJwtKeyPassphrase(config.getJwtKeyPassphrase())
               .withJwtAlgorithm(config.getJwtAlgorithm())
+              .withAuthUrl(jsonResponse.getAuthorizationEndpoint())
               .withTokenUrl(jsonResponse.getTokenEndpoint())
               .withScopes(Collections.singletonList("all-apis"))
               .withAuthParameterPosition(AuthParameterPosition.HEADER)

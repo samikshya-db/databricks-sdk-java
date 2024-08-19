@@ -63,6 +63,7 @@ public class AzureServicePrincipalCredentialsProvider implements CredentialsProv
         .withClientId(config.getAzureClientId())
         .withClientSecret(config.getAzureClientSecret())
         .withJwtKid(config.getJwtKid())
+        .withAuthUrl(aadEndpoint) //TODO : need to check this.
         .withJwtKeyFile(config.getJwtKeyFile())
         .withJwtKeyPassphrase(config.getJwtKeyPassphrase())
         .withJwtAlgorithm(config.getJwtAlgorithm())

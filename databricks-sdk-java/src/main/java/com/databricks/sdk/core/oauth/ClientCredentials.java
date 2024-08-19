@@ -29,7 +29,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.bouncycastle.operator.InputDecryptorProvider;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 
@@ -37,7 +36,6 @@ import java.util.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
-
 /**
  * An implementation of RefreshableTokenSource implementing the client_credentials OAuth grant type.
  *
@@ -51,6 +49,7 @@ public class ClientCredentials extends RefreshableTokenSource {
     private String clientId;
     private String clientSecret;
     private String tokenUrl;
+    private String authUrl;
     private String jwtKeyFile;
     private String jwtKid;
     private String jwtKeyPassphrase;
@@ -73,6 +72,11 @@ public class ClientCredentials extends RefreshableTokenSource {
 
     public Builder withTokenUrl(String tokenUrl) {
       this.tokenUrl = tokenUrl;
+      return this;
+    }
+
+    public Builder withAuthUrl(String authUrl) {
+      this.authUrl = authUrl;
       return this;
     }
 
@@ -121,7 +125,7 @@ public class ClientCredentials extends RefreshableTokenSource {
       if(this.clientSecret == null){
         Objects.requireNonNull(this.jwtKeyFile, "JWT key file must be specified");
         Objects.requireNonNull(this.jwtKid, "JWT KID must be specified");
-        return new ClientCredentials(hc,clientId,jwtKeyFile,jwtKid,jwtKeyPassphrase,jwtAlgorithm,tokenUrl,endpointParams,scopes,position);
+        return new ClientCredentials(hc,clientId,jwtKeyFile,jwtKid,jwtKeyPassphrase,jwtAlgorithm,tokenUrl,authUrl,endpointParams,scopes,position);
       }
       Objects.requireNonNull(this.tokenUrl, "tokenUrl must be specified");
       return new ClientCredentials(
@@ -133,12 +137,14 @@ public class ClientCredentials extends RefreshableTokenSource {
   private String clientId;
   private String clientSecret;
   private String tokenUrl;
+  private String authUrl;
   private Map<String, String> endpointParams;
   private List<String> scopes;
   private AuthParameterPosition position;
 
   private String jwtKeyFile;
   private String jwtKid;
+  private String actualType;
   private String jwtKeyPassphrase;
   private JWSAlgorithm jwtAlgorithm;
   private ClientCredentials(
@@ -164,13 +170,14 @@ public class ClientCredentials extends RefreshableTokenSource {
           String jwtKid,
           String jwtKeyPassphrase,
           String jwtAlgorithm,
-          String tokenUrl,
+          String tokenUrl,String authUrl,
           Map<String, String> endpointParams,
           List<String> scopes,
           AuthParameterPosition position) {
     this.hc = hc;
     this.clientId = clientId;
     this.clientSecret = null;
+    this.authUrl = authUrl;
     this.jwtKeyFile = jwtKeyFile;
     this.jwtKid = jwtKid;
     this.jwtKeyPassphrase = jwtKeyPassphrase;
@@ -267,7 +274,7 @@ public class ClientCredentials extends RefreshableTokenSource {
     PEMParser pemParser = new PEMParser(reader);
     Object pemObject = pemParser.readObject();
     pemParser.close();
-    String actualType = getActualType(jwtAlgorithm);
+    this.actualType = getActualType(jwtAlgorithm);
     PrivateKeyInfo privateKeyInfo;
     if (jwtKeyPassphrase != null) {
       PKCS8EncryptedPrivateKeyInfo pKCS8EncryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo)pemObject;
@@ -290,9 +297,16 @@ public class ClientCredentials extends RefreshableTokenSource {
   }
 
   private SignedJWT fetchAccessToken(PrivateKey privateKey) {
+
     try {
       // Create RSA signer with the private key
-      JWSSigner signer = new RSASSASigner(privateKey);
+      JWSSigner signer;
+      if(Objects.equals(this.actualType, "RSA")){
+        signer = new RSASSASigner(privateKey);
+      }
+      else{
+        signer = new ECDSASigner((ECPrivateKey)privateKey);
+      }
       Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
       // Prepare JWT with claims set
       JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
@@ -300,12 +314,10 @@ public class ClientCredentials extends RefreshableTokenSource {
               .issuer(clientId)
               .issueTime(timestamp)
               .expirationTime(timestamp)
-              .claim("scope", "your_scope") // Additional claims
+              .jwtID(UUID.randomUUID().toString())
+              .audience(this.authUrl)
               .build();
-
-      // Create the JWS header with algorithm RSA256
-      JWSHeader header = getJWTHeader();
-
+      JWSHeader header = new JWSHeader.Builder(this.jwtAlgorithm).keyID(this.jwtKid).build();
       // Create the signed JWT
       SignedJWT signedJWT = new SignedJWT(header, claimsSet);
 
