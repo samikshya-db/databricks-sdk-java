@@ -13,7 +13,6 @@ import java.util.Map;
  */
 public class OAuthM2MServicePrincipalCredentialsProvider implements CredentialsProvider {
   private final ObjectMapper mapper = new ObjectMapper();
-
   @Override
   public String authType() {
     return "oauth-m2m";
@@ -22,7 +21,6 @@ public class OAuthM2MServicePrincipalCredentialsProvider implements CredentialsP
   @Override
   public HeaderFactory configure(DatabricksConfig config) {
     if (config.getClientId() == null
-        || config.getClientSecret() == null
         || config.getHost() == null) {
       return null;
     }
@@ -36,6 +34,10 @@ public class OAuthM2MServicePrincipalCredentialsProvider implements CredentialsP
               .withHttpClient(config.getHttpClient())
               .withClientId(config.getClientId())
               .withClientSecret(config.getClientSecret())
+              .withJwtKid(config.getJwtKid())
+              .withJwtKeyFile(config.getJwtKeyFile())
+              .withJwtKeyPassphrase(config.getJwtKeyPassphrase())
+              .withJwtAlgorithm(config.getJwtAlgorithm())
               .withTokenUrl(jsonResponse.getTokenEndpoint())
               .withScopes(Collections.singletonList("all-apis"))
               .withAuthParameterPosition(AuthParameterPosition.HEADER)

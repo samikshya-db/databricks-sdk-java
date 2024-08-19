@@ -141,6 +141,21 @@ public class DatabricksConfig {
   @ConfigAttribute(env = "USE_SYSTEM_PROPERTIES_HTTP")
   private Boolean useSystemPropertiesHttp;
 
+  @ConfigAttribute(env = "DISCOVERY_ENDPOINT")
+  private String discoveryEndpoint;
+
+  @ConfigAttribute(env = "JWT_KEY_FILE")
+  private String jwtKeyFile;
+
+  @ConfigAttribute(env = "JWT_KID")
+  private String jwtKid;
+
+  @ConfigAttribute(env = "JWT_PASS_PHRASE")
+  private String jwtKeyPassphrase;
+
+  @ConfigAttribute(env = "JWT_ALGORITHM")
+  private String jwtAlgorithm;
+
   private volatile boolean resolved;
   private HeaderFactory headerFactory;
 
@@ -220,7 +235,41 @@ public class DatabricksConfig {
     this.host = host;
     return this;
   }
+  public DatabricksConfig setJwtAlgorithm(String jwtAlgorithm) {
+    this.jwtAlgorithm = jwtAlgorithm;
+    return this;
+  }
 
+  public DatabricksConfig setJwtKeyPassphrase(String jwtKeyPassphrase) {
+    this.jwtKeyPassphrase = jwtKeyPassphrase;
+    return this;
+  }
+
+  public DatabricksConfig setJwtKid(String jwtKid) {
+    this.jwtKid = jwtKid;
+    return this;
+  }
+
+  public DatabricksConfig setJwtKeyFile(String jwtKeyFile) {
+    this.jwtKeyFile = jwtKeyFile;
+    return this;
+  }
+
+  public String getJwtAlgorithm() {
+    return this.jwtAlgorithm;
+  }
+
+  public String getJwtKeyPassphrase() {
+    return this.jwtKeyPassphrase;
+  }
+
+  public String getJwtKid() {
+    return this.jwtKid;
+  }
+
+  public String getJwtKeyFile() {
+    return jwtKeyFile;
+  }
   public String getAccountId() {
     return accountId;
   }
@@ -548,12 +597,21 @@ public class DatabricksConfig {
     return this;
   }
 
+
   public ProxyConfig.ProxyAuthType getProxyAuthType() {
     return proxyAuthType;
   }
 
   public DatabricksConfig setProxyAuthType(ProxyConfig.ProxyAuthType proxyAuthType) {
     this.proxyAuthType = proxyAuthType;
+    return this;
+  }
+  public String getDiscoveryEndpoint() {
+    return discoveryEndpoint;
+  }
+
+  public DatabricksConfig setDiscoveryEndpoint(String discoveryEndpoint) {
+    this.discoveryEndpoint = discoveryEndpoint;
     return this;
   }
 
@@ -596,6 +654,21 @@ public class DatabricksConfig {
   }
 
   public OpenIDConnectEndpoints getOidcEndpoints() throws IOException {
+
+  if(this.discoveryEndpoint==null){
+    return getDefaultOidcEndpoints();}
+  Request request = new Request("GET", getDiscoveryEndpoint());
+  Response resp = getHttpClient().execute(request);
+  if(resp.getStatusCode()!=200){
+    return null;
+  }
+    OpenIDConnectEndpoints openIDConnectEndpoints = new ObjectMapper().readValue(resp.getBody(), OpenIDConnectEndpoints.class);
+    System.out.println("here is token endpoint !!!! "+ openIDConnectEndpoints.getTokenEndpoint());
+    System.out.println("here is auth endpoint !!!! "+ openIDConnectEndpoints.getAuthorizationEndpoint());
+    return openIDConnectEndpoints;
+  }
+
+  public OpenIDConnectEndpoints getDefaultOidcEndpoints() throws IOException {
     if (getHost() == null) {
       return null;
     }

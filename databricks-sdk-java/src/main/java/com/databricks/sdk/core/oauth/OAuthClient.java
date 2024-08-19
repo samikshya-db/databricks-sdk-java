@@ -33,6 +33,7 @@ public class OAuthClient {
     private String clientId;
     private String redirectUrl;
     private List<String> scopes;
+    private String discoveryURL;
     private String clientSecret;
     private HttpClient hc;
 
@@ -40,6 +41,10 @@ public class OAuthClient {
 
     public Builder withHttpClient(HttpClient hc) {
       this.hc = hc;
+      return this;
+    }
+    public Builder withDiscoveryURL(String discoveryURL) {
+      this.discoveryURL = discoveryURL;
       return this;
     }
 
@@ -80,6 +85,7 @@ public class OAuthClient {
   private final List<String> scopes;
   private final String tokenUrl;
   private final String authUrl;
+  private final String discoveryUrl;
   private final HttpClient hc;
   private final SecureRandom random = new SecureRandom();
   private final boolean isAws;
@@ -92,6 +98,7 @@ public class OAuthClient {
             .withClientId(config.getClientId())
             .withClientSecret(config.getClientSecret())
             .withHost(config.getHost())
+            .withDiscoveryURL(config.getDiscoveryEndpoint())
             .withRedirectUrl(
                 config.getOAuthRedirectUrl() != null
                     ? config.getOAuthRedirectUrl()
@@ -102,11 +109,12 @@ public class OAuthClient {
   private OAuthClient(Builder b) throws IOException {
     this.clientId = Objects.requireNonNull(b.clientId);
     this.clientSecret = b.clientSecret;
+    this.discoveryUrl = b.discoveryURL;
     this.redirectUrl = Objects.requireNonNull(b.redirectUrl);
     this.host = b.host;
     this.hc = b.hc;
 
-    DatabricksConfig config = new DatabricksConfig().setHost(b.host).resolve();
+    DatabricksConfig config = new DatabricksConfig().setHost(b.host).setDiscoveryEndpoint(discoveryUrl).resolve();
     OpenIDConnectEndpoints oidc = config.getOidcEndpoints();
     if (oidc == null) {
       throw new DatabricksException(b.host + " does not support OAuth");
