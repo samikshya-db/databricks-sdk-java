@@ -29,6 +29,7 @@ public class OAuthM2MServicePrincipalCredentialsProvider implements CredentialsP
     // https://login.microsoftonline.com/{cfg.azure_tenant_id}/.well-known/oauth-authorization-server
     try {
       OpenIDConnectEndpoints jsonResponse = config.getOidcEndpoints();
+      System.out.println("here is json "+jsonResponse.toString());
       ClientCredentials tokenSource =
           new ClientCredentials.Builder()
               .withHttpClient(config.getHttpClient())
@@ -38,7 +39,6 @@ public class OAuthM2MServicePrincipalCredentialsProvider implements CredentialsP
               .withJwtKeyFile(config.getJwtKeyFile())
               .withJwtKeyPassphrase(config.getJwtKeyPassphrase())
               .withJwtAlgorithm(config.getJwtAlgorithm())
-              .withAuthUrl(jsonResponse.getAuthorizationEndpoint())
               .withTokenUrl(jsonResponse.getTokenEndpoint())
               .withScopes(Collections.singletonList("all-apis"))
               .withAuthParameterPosition(AuthParameterPosition.HEADER)

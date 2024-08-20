@@ -663,8 +663,6 @@ public class DatabricksConfig {
     return null;
   }
     OpenIDConnectEndpoints openIDConnectEndpoints = new ObjectMapper().readValue(resp.getBody(), OpenIDConnectEndpoints.class);
-    System.out.println("here is token endpoint !!!! "+ openIDConnectEndpoints.getTokenEndpoint());
-    System.out.println("here is auth endpoint !!!! "+ openIDConnectEndpoints.getAuthorizationEndpoint());
     return openIDConnectEndpoints;
   }
 

@@ -56,18 +56,26 @@ public abstract class RefreshableTokenSource implements TokenSource {
         }
         break;
       case HEADER:
-        String authHeaderValue =
-            "Basic "
-                + Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes());
-        headers.put(HttpHeaders.AUTHORIZATION, authHeaderValue);
+        if(!params.containsKey("client_assertion_type")) {
+          String authHeaderValue =
+                  "Basic "
+                          + Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes());
+          headers.put(HttpHeaders.AUTHORIZATION, authHeaderValue);
+        }
         break;
     }
+    System.out.println("forming request with tokenURL and params "+tokenUrl+ " "+params);
     FormRequest req = new FormRequest(tokenUrl, params);
+    System.out.println("forming headers "+headers);
     req.withHeaders(headers);
+    System.out.println("built request "+headers);
     try {
       Response rawResp = hc.execute(req);
+      System.out.println("raw resp "+rawResp);
       OAuthResponse resp = new ObjectMapper().readValue(rawResp.getBody(), OAuthResponse.class);
+      System.out.println("new resp "+resp);
       if (resp.getErrorCode() != null) {
+        System.out.println("exceptions!!! "+resp.getErrorCode() + ": " + resp.getErrorSummary());
         throw new IllegalArgumentException(resp.getErrorCode() + ": " + resp.getErrorSummary());
       }
       LocalDateTime expiry = LocalDateTime.now().plus(resp.getExpiresIn(), ChronoUnit.SECONDS);
