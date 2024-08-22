@@ -144,6 +144,13 @@ public class DatabricksConfig {
   @ConfigAttribute(env = "DISCOVERY_ENDPOINT")
   private String discoveryEndpoint;
 
+  @ConfigAttribute(env = "TOKEN_ENDPOINT")
+  private String tokenEndpoint;
+
+  @ConfigAttribute(env = "AUTH_ENDPOINT")
+  private String authEndpoint;
+
+
   @ConfigAttribute(env = "JWT_KEY_FILE")
   private String jwtKeyFile;
 
@@ -262,7 +269,6 @@ public class DatabricksConfig {
   public String getJwtKeyPassphrase() {
     return this.jwtKeyPassphrase;
   }
-
   public String getJwtKid() {
     return this.jwtKid;
   }
@@ -615,6 +621,24 @@ public class DatabricksConfig {
     return this;
   }
 
+  public String getTokenEndpoint() {
+    return tokenEndpoint;
+  }
+
+  public DatabricksConfig setTokenEndpoint(String tokenEndpoint) {
+    this.tokenEndpoint = tokenEndpoint;
+    return this;
+  }
+
+  public String getAuthEndpoint() {
+    return authEndpoint;
+  }
+
+  public DatabricksConfig setAuthEndpoint(String authEndpoint) {
+    this.authEndpoint = authEndpoint;
+    return this;
+  }
+
   public Boolean getUseSystemPropertiesHttp() {
     return useSystemPropertiesHttp;
   }
@@ -652,21 +676,35 @@ public class DatabricksConfig {
     }
     return host.startsWith("https://accounts.") || host.startsWith("https://accounts-dod.");
   }
-
-  public OpenIDConnectEndpoints getOidcEndpoints() throws IOException {
-
-  if(this.discoveryEndpoint==null){
-    return getDefaultOidcEndpoints();}
-  Request request = new Request("GET", getDiscoveryEndpoint());
-  Response resp = getHttpClient().execute(request);
-  if(resp.getStatusCode()!=200){
-    return null;
-  }
+  private void updateOidcFromDiscoveryEndpoint() throws IOException {
+    Request request = new Request("GET", getDiscoveryEndpoint());
+    Response resp = getHttpClient().execute(request);
+    if(resp.getStatusCode()!=200){
+      return;
+    }
     OpenIDConnectEndpoints openIDConnectEndpoints = new ObjectMapper().readValue(resp.getBody(), OpenIDConnectEndpoints.class);
-    return openIDConnectEndpoints;
+    if(tokenEndpoint==null){
+      tokenEndpoint = openIDConnectEndpoints.getTokenEndpoint();
+    }
+    if(authEndpoint == null){
+      authEndpoint = openIDConnectEndpoints.getAuthorizationEndpoint();
+    }
+  }
+  public OpenIDConnectEndpoints getOidcEndpoints() throws IOException {
+    if(this.discoveryEndpoint!=null && (tokenEndpoint==null || authEndpoint==null)){
+       updateOidcFromDiscoveryEndpoint();
+    }
+  if(this.tokenEndpoint==null){
+    this.tokenEndpoint = getDefaultTokenEndpoint();
+  }
+    if(this.authEndpoint != null){
+      this.authEndpoint = getDefaultAuthEndpoint();
+    }
+    return new OpenIDConnectEndpoints(tokenEndpoint,authEndpoint);
+
   }
 
-  public OpenIDConnectEndpoints getDefaultOidcEndpoints() throws IOException {
+  public String getDefaultOidcEndpoint(String endpointType) throws IOException {
     if (getHost() == null) {
       return null;
     }
@@ -679,12 +717,12 @@ public class DatabricksConfig {
       if (realAuthUrl == null) {
         return null;
       }
-      return new OpenIDConnectEndpoints(
-          realAuthUrl.replaceAll("/authorize", "/token"), realAuthUrl);
+      return realAuthUrl.replaceAll("/authorize", "/" + endpointType);
     }
+
     if (isAccountClient() && getAccountId() != null) {
       String prefix = getHost() + "/oidc/accounts/" + getAccountId();
-      return new OpenIDConnectEndpoints(prefix + "/v1/token", prefix + "/v1/authorize");
+      return prefix + "/v1/" + endpointType;
     }
 
     String oidcEndpoint = getHost() + "/oidc/.well-known/oauth-authorization-server";
@@ -692,7 +730,17 @@ public class DatabricksConfig {
     if (resp.getStatusCode() != 200) {
       return null;
     }
-    return new ObjectMapper().readValue(resp.getBody(), OpenIDConnectEndpoints.class);
+    OpenIDConnectEndpoints endpoints = new ObjectMapper().readValue(resp.getBody(), OpenIDConnectEndpoints.class);
+
+    return "token".equals(endpointType) ? endpoints.getTokenEndpoint() : endpoints.getAuthorizationEndpoint();
+  }
+
+  public String getDefaultTokenEndpoint() throws IOException {
+    return getDefaultOidcEndpoint("token");
+  }
+
+  public String getDefaultAuthEndpoint() throws IOException {
+    return getDefaultOidcEndpoint("authorize");
   }
 
   @Override

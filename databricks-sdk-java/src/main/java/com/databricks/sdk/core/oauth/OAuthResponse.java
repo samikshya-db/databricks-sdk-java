@@ -66,4 +66,8 @@ public class OAuthResponse {
   public String getTokenType() {
     return tokenType;
   }
+
+  public String toString(){
+  return "here is error "+ error+" errorCode "+errorCode + " "+ errorDescription+" "+errorSummary;
+  }
 }

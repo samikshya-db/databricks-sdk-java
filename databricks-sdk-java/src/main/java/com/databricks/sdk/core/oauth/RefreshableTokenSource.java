@@ -73,7 +73,7 @@ public abstract class RefreshableTokenSource implements TokenSource {
       Response rawResp = hc.execute(req);
       System.out.println("raw resp "+rawResp);
       OAuthResponse resp = new ObjectMapper().readValue(rawResp.getBody(), OAuthResponse.class);
-      System.out.println("new resp "+resp);
+      System.out.println("new resp "+resp.toString());
       if (resp.getErrorCode() != null) {
         System.out.println("exceptions!!! "+resp.getErrorCode() + ": " + resp.getErrorSummary());
         throw new IllegalArgumentException(resp.getErrorCode() + ": " + resp.getErrorSummary());
