@@ -697,7 +697,7 @@ public class DatabricksConfig {
   if(this.tokenEndpoint==null){
     this.tokenEndpoint = getDefaultTokenEndpoint();
   }
-    if(this.authEndpoint != null){
+    if(this.authEndpoint == null){
       this.authEndpoint = getDefaultAuthEndpoint();
     }
     return new OpenIDConnectEndpoints(tokenEndpoint,authEndpoint);
